@@ -1,0 +1,76 @@
+# BlockPickup Konfiguration
+
+# Muss der Spieler sneaken (schleichen) um Blöcke aufzuheben?
+require-sneak: true
+
+# Muss der Spieler eine leere Hand haben?
+require-empty-hand: false
+
+# Pickup-Einstellungen für Blöcke
+blocks:
+  enabled: true
+  # Liste der erlaubten Block-Typen
+  allowed-types:
+    - CHEST
+    - TRAPPED_CHEST
+    - BARREL
+    - FURNACE
+    - BLAST_FURNACE
+    - SMOKER
+    - HOPPER
+    - DROPPER
+    - DISPENSER
+    - BREWING_STAND
+    - SHULKER_BOX
+    # Alle Shulker-Box Farben
+    - WHITE_SHULKER_BOX
+    - ORANGE_SHULKER_BOX
+    - MAGENTA_SHULKER_BOX
+    - LIGHT_BLUE_SHULKER_BOX
+    - YELLOW_SHULKER_BOX
+    - LIME_SHULKER_BOX
+    - PINK_SHULKER_BOX
+    - GRAY_SHULKER_BOX
+    - LIGHT_GRAY_SHULKER_BOX
+    - CYAN_SHULKER_BOX
+    - PURPLE_SHULKER_BOX
+    - BLUE_SHULKER_BOX
+    - BROWN_SHULKER_BOX
+    - GREEN_SHULKER_BOX
+    - RED_SHULKER_BOX
+    - BLACK_SHULKER_BOX
+
+# Pickup-Einstellungen für Entities
+entities:
+  enabled: true
+  # Liste der erlaubten Entity-Typen
+  allowed-types:
+    - COW
+    - PIG
+    - SHEEP
+    - CHICKEN
+    - HORSE
+    - DONKEY
+    - MULE
+    - LLAMA
+    - CAT
+    - DOG
+    - WOLF
+    - VILLAGER
+    - ITEM_FRAME
+    - ARMOR_STAND
+    - MINECART
+    - MINECART_CHEST
+    - MINECART_FURNACE
+    - MINECART_HOPPER
+    - BOAT
+
+# Nachrichten
+messages:
+  pickup-success: "&aErfolgreich aufgehoben!"
+  pickup-failed: "&cDu kannst das nicht aufheben!"
+  place-success: "&aErfolgreich platziert!"
+  no-permission: "&cDu hast keine Berechtigung dafür!"
+  config-reloaded: "&aKonfiguration neu geladen!"
+  must-sneak: "&cDu musst schleichen um das aufzuheben!"
+  must-empty-hand: "&cDeine Hand muss leer sein!"

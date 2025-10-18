@@ -1,0 +1,42 @@
+name: BlockPickup
+version: '${project.version}'
+main: de.blockpickup.BlockPickupPlugin
+api-version: '1.21'
+author: YourName
+description: Erlaube Spielern, Blöcke mit Inhalt und Entities aufzuheben
+
+commands:
+  blockpickup:
+    description: Hauptbefehl für BlockPickup
+    usage: /blockpickup <reload|help>
+    aliases: [bp, pickup]
+    permission: blockpickup.admin
+
+permissions:
+  blockpickup.admin:
+    description: Admin-Rechte für BlockPickup
+    default: op
+  blockpickup.pickup.block:
+    description: Erlaube das Aufheben von Blöcken
+    default: true
+  blockpickup.pickup.entity:
+    description: Erlaube das Aufheben von Entities
+    default: true
+  blockpickup.pickup.chest:
+    description: Erlaube das Aufheben von Kisten
+    default: true
+  blockpickup.pickup.furnace:
+    description: Erlaube das Aufheben von Öfen
+    default: true
+  blockpickup.pickup.barrel:
+    description: Erlaube das Aufheben von Fässern
+    default: true
+  blockpickup.pickup.hopper:
+    description: Erlaube das Aufheben von Trichtern
+    default: true
+  blockpickup.pickup.dropper:
+    description: Erlaube das Aufheben von Werfern
+    default: true
+  blockpickup.pickup.dispenser:
+    description: Erlaube das Aufheben von Spendern
+    default: true

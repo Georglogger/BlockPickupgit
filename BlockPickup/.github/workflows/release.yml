@@ -1,0 +1,44 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build with Maven
+      run: mvn clean package
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: target/BlockPickup-*.jar
+        body: |
+          ## BlockPickup ${{ github.ref_name }}
+
+          ### Installation
+          1. Lade die JAR-Datei herunter
+          2. Kopiere sie in den `plugins` Ordner deines Minecraft-Servers
+          3. Starte den Server neu
+
+          ### Verwendung
+          - Halte **Shift** und breche Container ab um sie mit Inhalt aufzuheben
+          - Halte **Shift** und rechtsklicke Entities um sie aufzuheben
+
+          Siehe README.md für mehr Informationen.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
