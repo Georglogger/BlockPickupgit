@@ -14,7 +14,7 @@ Ein Minecraft Plugin für Version 1.21.6+, das Spielern erlaubt, Kisten, Öfen u
 
 ## Installation
 
-1. Java 21 oder höher installieren
+1. Java 17 oder höher installieren
 2. Maven installieren
 3. Plugin kompilieren:
    ```bash
@@ -125,7 +125,7 @@ messages:
 
 - **Minecraft Version**: 1.21.4+ (kompatibel mit 1.21.6+)
 - **API**: Paper/Spigot API
-- **Java Version**: 21
+- **Java Version**: 17 (minimum)
 - **Speicherung**: NBT-Daten über PersistentDataContainer
 
 ## Entwicklung

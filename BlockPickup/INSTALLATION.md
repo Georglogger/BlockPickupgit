@@ -56,9 +56,9 @@ Falls du das Plugin lokal bauen möchtest:
 
 ### Windows
 
-1. **Java 21 installieren**:
+1. **Java 17 installieren**:
    - Gehe zu https://adoptium.net/
-   - Lade "Eclipse Temurin 21 (LTS)" herunter
+   - Lade "Eclipse Temurin 17 (LTS)" herunter
    - Installiere es
 
 2. **Maven installieren**:
