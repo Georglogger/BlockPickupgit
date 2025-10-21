@@ -1,0 +1,338 @@
+package de.blockpickup;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.BlockState;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.EulerAngle;
+import org.bukkit.util.Vector;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Manager für das Tragen von Blöcken und Entities (CarryOn-Style)
+ */
+public class CarryingManager {
+
+    private final BlockPickupPlugin plugin;
+
+    // Speichert welcher Spieler was trägt
+    private final Map<UUID, CarriedObject> carryingPlayers = new HashMap<>();
+
+    // Armor Stands für visuelle Darstellung
+    private final Map<UUID, ArmorStand> visualDisplays = new HashMap<>();
+
+    public CarryingManager(BlockPickupPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    /**
+     * Prüft ob ein Spieler gerade etwas trägt
+     */
+    public boolean isCarrying(Player player) {
+        return carryingPlayers.containsKey(player.getUniqueId());
+    }
+
+    /**
+     * Spieler hebt ein Entity auf
+     */
+    public void pickupEntity(Player player, Entity entity) {
+        if (isCarrying(player)) {
+            return;
+        }
+
+        // Speichere Entity-Daten
+        CarriedObject carried = new CarriedObject(entity);
+        carryingPlayers.put(player.getUniqueId(), carried);
+
+        // Entferne Original-Entity
+        entity.remove();
+
+        // Erstelle visuelle Darstellung
+        createVisualDisplay(player, entity);
+
+        // Verlangsame Spieler
+        applySlowness(player);
+    }
+
+    /**
+     * Spieler hebt einen Block auf
+     */
+    public void pickupBlock(Player player, BlockState blockState, Location location) {
+        if (isCarrying(player)) {
+            return;
+        }
+
+        // Speichere Block-Daten
+        CarriedObject carried = new CarriedObject(blockState, location);
+        carryingPlayers.put(player.getUniqueId(), carried);
+
+        // Entferne Original-Block
+        location.getBlock().setType(Material.AIR);
+
+        // Erstelle visuelle Darstellung
+        createVisualDisplay(player, blockState.getType());
+
+        // Verlangsame Spieler
+        applySlowness(player);
+    }
+
+    /**
+     * Spieler legt das getragene Objekt ab
+     */
+    public void placeCarried(Player player, Location location) {
+        if (!isCarrying(player)) {
+            return;
+        }
+
+        CarriedObject carried = carryingPlayers.get(player.getUniqueId());
+
+        if (carried.isEntity()) {
+            // Spawne Entity wieder
+            carried.spawnEntity(location);
+        } else {
+            // Platziere Block wieder
+            carried.placeBlock(location);
+        }
+
+        // Entferne visuelle Darstellung
+        removeVisualDisplay(player);
+
+        // Entferne Slowness
+        removeSlowness(player);
+
+        // Entferne aus Map
+        carryingPlayers.remove(player.getUniqueId());
+    }
+
+    /**
+     * Spieler droppt das getragene Objekt (z.B. bei Tod oder Disconnect)
+     */
+    public void dropCarried(Player player) {
+        if (!isCarrying(player)) {
+            return;
+        }
+
+        // Platziere an Spieler-Position
+        placeCarried(player, player.getLocation());
+    }
+
+    /**
+     * Erstellt die visuelle Darstellung für Entity
+     */
+    private void createVisualDisplay(Player player, Entity entity) {
+        ArmorStand display = player.getWorld().spawn(
+            player.getEyeLocation().add(player.getLocation().getDirection().multiply(0.5)),
+            ArmorStand.class
+        );
+
+        display.setVisible(false);
+        display.setGravity(false);
+        display.setMarker(true);
+        display.setSmall(true);
+        display.setInvulnerable(true);
+        display.setCustomName(entity.getName());
+        display.setCustomNameVisible(true);
+
+        // Versuche Entity-Kopf anzuzeigen (funktioniert bei einigen Entities)
+        // Für volle Entity-Darstellung müssten wir Packets verwenden
+
+        visualDisplays.put(player.getUniqueId(), display);
+
+        // Update Position kontinuierlich
+        startDisplayUpdate(player);
+    }
+
+    /**
+     * Erstellt die visuelle Darstellung für Block
+     */
+    private void createVisualDisplay(Player player, Material blockType) {
+        ArmorStand display = player.getWorld().spawn(
+            player.getEyeLocation().add(player.getLocation().getDirection().multiply(0.5)),
+            ArmorStand.class
+        );
+
+        display.setVisible(false);
+        display.setGravity(false);
+        display.setMarker(true);
+        display.setSmall(true);
+        display.setInvulnerable(true);
+
+        // Setze Block als Helm (wird über Kopf angezeigt)
+        display.getEquipment().setHelmet(new ItemStack(blockType));
+        display.setHeadPose(new EulerAngle(0, 0, 0));
+
+        visualDisplays.put(player.getUniqueId(), display);
+
+        // Update Position kontinuierlich
+        startDisplayUpdate(player);
+    }
+
+    /**
+     * Startet kontinuierliches Update der Display-Position
+     */
+    private void startDisplayUpdate(Player player) {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            if (!isCarrying(player)) {
+                return;
+            }
+
+            ArmorStand display = visualDisplays.get(player.getUniqueId());
+            if (display == null || !display.isValid()) {
+                return;
+            }
+
+            // Position vor dem Spieler auf Kopfhöhe
+            Vector direction = player.getLocation().getDirection();
+            Location displayLoc = player.getEyeLocation()
+                .add(direction.multiply(0.5))
+                .add(0, 0.5, 0);
+
+            display.teleport(displayLoc);
+
+        }, 0L, 1L); // Update jede Tick
+    }
+
+    /**
+     * Entfernt die visuelle Darstellung
+     */
+    private void removeVisualDisplay(Player player) {
+        ArmorStand display = visualDisplays.remove(player.getUniqueId());
+        if (display != null && display.isValid()) {
+            display.remove();
+        }
+    }
+
+    /**
+     * Verlangsamt den Spieler
+     */
+    private void applySlowness(Player player) {
+        player.setWalkSpeed(0.1f); // Normal ist 0.2f
+    }
+
+    /**
+     * Entfernt Verlangsamung
+     */
+    private void removeSlowness(Player player) {
+        player.setWalkSpeed(0.2f); // Zurück zu normal
+    }
+
+    /**
+     * Cleanup beim Plugin-Disable
+     */
+    public void cleanup() {
+        // Alle Spieler lassen ihre getragenen Objekte fallen
+        for (UUID uuid : new HashMap<>(carryingPlayers).keySet()) {
+            Player player = plugin.getServer().getPlayer(uuid);
+            if (player != null) {
+                dropCarried(player);
+            }
+        }
+
+        // Entferne alle Displays
+        for (ArmorStand display : visualDisplays.values()) {
+            if (display.isValid()) {
+                display.remove();
+            }
+        }
+
+        carryingPlayers.clear();
+        visualDisplays.clear();
+    }
+
+    /**
+     * Klasse zum Speichern der getragenen Objekt-Daten
+     */
+    public static class CarriedObject {
+        private final boolean isEntity;
+
+        // Entity-Daten
+        private String entitySerializedData;
+        private org.bukkit.entity.EntityType entityType;
+
+        // Block-Daten
+        private BlockState blockState;
+        private Location originalLocation;
+
+        // Constructor für Entity
+        public CarriedObject(Entity entity) {
+            this.isEntity = true;
+            this.entityType = entity.getType();
+
+            // Serialisiere ALLE Entity-Daten als NBT/String
+            this.entitySerializedData = de.blockpickup.utils.NBTUtils.serializeCompleteEntity(entity);
+        }
+
+        // Constructor für Block
+        public CarriedObject(BlockState blockState, Location location) {
+            this.isEntity = false;
+            this.blockState = blockState;
+            this.originalLocation = location;
+        }
+
+        public boolean isEntity() {
+            return isEntity;
+        }
+
+        public void spawnEntity(Location location) {
+            if (entityType != null && entitySerializedData != null) {
+                // Spawne Entity an neuer Position
+                Entity entity = location.getWorld().spawnEntity(location, entityType);
+
+                // Lade ALLE gespeicherten Daten zurück
+                de.blockpickup.utils.NBTUtils.deserializeCompleteEntity(entity, entitySerializedData);
+            }
+        }
+
+        public void placeBlock(Location location) {
+            if (blockState != null) {
+                // Setze Block-Typ
+                location.getBlock().setType(blockState.getType());
+
+                // Kopiere BlockState-Daten (inkl. Inventar!)
+                BlockState newState = location.getBlock().getState();
+
+                // Wenn Container: Kopiere Inventar
+                if (blockState instanceof org.bukkit.block.Container sourceContainer &&
+                    newState instanceof org.bukkit.block.Container targetContainer) {
+
+                    // Kopiere alle Items
+                    for (int i = 0; i < sourceContainer.getInventory().getSize(); i++) {
+                        org.bukkit.inventory.ItemStack item = sourceContainer.getInventory().getItem(i);
+                        if (item != null) {
+                            targetContainer.getInventory().setItem(i, item.clone());
+                        }
+                    }
+
+                    // Kopiere Custom Name
+                    if (sourceContainer.getCustomName() != null) {
+                        targetContainer.setCustomName(sourceContainer.getCustomName());
+                    }
+
+                    // Spezielle Daten für Öfen
+                    if (blockState instanceof org.bukkit.block.Furnace sourceFurnace &&
+                        newState instanceof org.bukkit.block.Furnace targetFurnace) {
+                        targetFurnace.setBurnTime(sourceFurnace.getBurnTime());
+                        targetFurnace.setCookTime(sourceFurnace.getCookTime());
+                        targetFurnace.setCookTimeTotal(sourceFurnace.getCookTimeTotal());
+                    }
+
+                    // Spezielle Daten für Brewing Stands
+                    if (blockState instanceof org.bukkit.block.BrewingStand sourceBrewingStand &&
+                        newState instanceof org.bukkit.block.BrewingStand targetBrewingStand) {
+                        targetBrewingStand.setBrewingTime(sourceBrewingStand.getBrewingTime());
+                        targetBrewingStand.setFuelLevel(sourceBrewingStand.getFuelLevel());
+                    }
+                }
+
+                // Update Block
+                newState.update(true, false);
+            }
+        }
+    }
+}

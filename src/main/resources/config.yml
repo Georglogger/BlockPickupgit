@@ -67,10 +67,12 @@ entities:
 
 # Nachrichten
 messages:
-  pickup-success: "&aErfolgreich aufgehoben!"
+  pickup-success: "&aErfolgreich aufgehoben! (CarryOn-Style)"
   pickup-failed: "&cDu kannst das nicht aufheben!"
   place-success: "&aErfolgreich platziert!"
   no-permission: "&cDu hast keine Berechtigung dafür!"
   config-reloaded: "&aKonfiguration neu geladen!"
   must-sneak: "&cDu musst schleichen um das aufzuheben!"
   must-empty-hand: "&cDeine Hand muss leer sein!"
+  already-carrying: "&cDu trägst bereits etwas! Platziere es zuerst."
+  dropped-carried: "&eGetragenes Objekt abgelegt."

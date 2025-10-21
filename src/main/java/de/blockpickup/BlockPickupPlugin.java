@@ -10,6 +10,7 @@ public class BlockPickupPlugin extends JavaPlugin {
 
     private static BlockPickupPlugin instance;
     private ConfigManager configManager;
+    private CarryingManager carryingManager;
 
     @Override
     public void onEnable() {
@@ -19,6 +20,9 @@ public class BlockPickupPlugin extends JavaPlugin {
         saveDefaultConfig();
         configManager = new ConfigManager(this);
 
+        // CarryingManager initialisieren (für CarryOn-Style)
+        carryingManager = new CarryingManager(this);
+
         // Listener registrieren
         getServer().getPluginManager().registerEvents(new BlockPickupListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityPickupListener(this), this);
@@ -26,11 +30,16 @@ public class BlockPickupPlugin extends JavaPlugin {
         // Commands registrieren
         getCommand("blockpickup").setExecutor(new BlockPickupCommand(this));
 
-        getLogger().info("BlockPickup wurde aktiviert!");
+        getLogger().info("BlockPickup wurde aktiviert (CarryOn-Style)!");
     }
 
     @Override
     public void onDisable() {
+        // Cleanup: Alle getragenen Objekte droppen
+        if (carryingManager != null) {
+            carryingManager.cleanup();
+        }
+
         getLogger().info("BlockPickup wurde deaktiviert!");
     }
 
@@ -40,6 +49,10 @@ public class BlockPickupPlugin extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public CarryingManager getCarryingManager() {
+        return carryingManager;
     }
 
     public String getMessage(String key) {
