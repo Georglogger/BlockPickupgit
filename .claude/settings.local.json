@@ -9,7 +9,8 @@
       "Bash(git push)",
       "Bash(git config user.name \"Georglogger\")",
       "Bash(git config user.email \"georglogger@users.noreply.github.com\")",
-      "Bash(git commit -m \"Downgrade auf Java 17 und Paper API 1.21.1 für Kompatibilität\")"
+      "Bash(git commit -m \"Downgrade auf Java 17 und Paper API 1.21.1 für Kompatibilität\")",
+      "Bash(git commit -m \"Downgrade auf Paper API 1.20.6 für Java 17 Kompatibilität\")"
     ],
     "deny": [],
     "ask": []
