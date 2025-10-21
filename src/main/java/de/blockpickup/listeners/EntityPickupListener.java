@@ -128,9 +128,9 @@ public class EntityPickupListener implements Listener {
             case ITEM_FRAME -> Material.ITEM_FRAME;
             case GLOW_ITEM_FRAME -> Material.GLOW_ITEM_FRAME;
             case MINECART -> Material.MINECART;
-            case MINECART_CHEST -> Material.CHEST_MINECART;
-            case MINECART_FURNACE -> Material.FURNACE_MINECART;
-            case MINECART_HOPPER -> Material.HOPPER_MINECART;
+            case CHEST_MINECART -> Material.CHEST_MINECART;
+            case FURNACE_MINECART -> Material.FURNACE_MINECART;
+            case HOPPER_MINECART -> Material.HOPPER_MINECART;
             case OAK_BOAT, SPRUCE_BOAT, BIRCH_BOAT, JUNGLE_BOAT, ACACIA_BOAT, DARK_OAK_BOAT, MANGROVE_BOAT, CHERRY_BOAT, BAMBOO_RAFT ->
                 getBoatMaterial(entity);
             default -> null;
