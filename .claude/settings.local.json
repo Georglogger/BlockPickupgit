@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean package)",
+      "Bash(java -version)",
+      "Bash(sudo apt-get update)",
+      "Bash(git add pom.xml)",
+      "Bash(git commit -m \"Update auf PaperMC 1.21.1 für Docker Server\")",
+      "Bash(git push)",
+      "Bash(git config user.name \"Georglogger\")",
+      "Bash(git config user.email \"georglogger@users.noreply.github.com\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
