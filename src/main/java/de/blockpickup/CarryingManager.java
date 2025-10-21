@@ -284,8 +284,18 @@ public class CarryingManager {
                 // Spawne Entity an neuer Position
                 Entity entity = location.getWorld().spawnEntity(location, entityType);
 
-                // Lade ALLE gespeicherten Daten zurück
+                // Lade ALLE gespeicherten Daten zurück (sofort)
                 de.blockpickup.utils.NBTUtils.deserializeCompleteEntity(entity, entitySerializedData);
+
+                // Manche Eigenschaften brauchen einen Tick um richtig geladen zu werden
+                BlockPickupPlugin.getInstance().getServer().getScheduler().runTaskLater(
+                    BlockPickupPlugin.getInstance(),
+                    () -> {
+                        // Lade Daten nochmal nach 1 Tick für Sicherheit
+                        de.blockpickup.utils.NBTUtils.deserializeCompleteEntity(entity, entitySerializedData);
+                    },
+                    1L
+                );
             }
         }
 
@@ -294,44 +304,63 @@ public class CarryingManager {
                 // Setze Block-Typ
                 location.getBlock().setType(blockState.getType());
 
-                // Kopiere BlockState-Daten (inkl. Inventar!)
-                BlockState newState = location.getBlock().getState();
+                // Warte 1 Tick damit Block richtig geladen ist
+                BlockPickupPlugin.getInstance().getServer().getScheduler().runTaskLater(
+                    BlockPickupPlugin.getInstance(),
+                    () -> {
+                        // Kopiere BlockState-Daten (inkl. Inventar!)
+                        BlockState newState = location.getBlock().getState();
 
-                // Wenn Container: Kopiere Inventar
-                if (blockState instanceof org.bukkit.block.Container sourceContainer &&
-                    newState instanceof org.bukkit.block.Container targetContainer) {
+                        // Wenn Container: Kopiere Inventar und Daten
+                        if (blockState instanceof org.bukkit.block.Container sourceContainer &&
+                            newState instanceof org.bukkit.block.Container targetContainer) {
 
-                    // Kopiere alle Items
-                    for (int i = 0; i < sourceContainer.getInventory().getSize(); i++) {
-                        org.bukkit.inventory.ItemStack item = sourceContainer.getInventory().getItem(i);
-                        if (item != null) {
-                            targetContainer.getInventory().setItem(i, item.clone());
+                            // Kopiere alle Items
+                            for (int i = 0; i < sourceContainer.getInventory().getSize(); i++) {
+                                org.bukkit.inventory.ItemStack item = sourceContainer.getInventory().getItem(i);
+                                if (item != null) {
+                                    targetContainer.getInventory().setItem(i, item.clone());
+                                }
+                            }
+
+                            // Kopiere Custom Name
+                            if (sourceContainer.getCustomName() != null) {
+                                targetContainer.setCustomName(sourceContainer.getCustomName());
+                            }
+
+                            // Spezielle Daten für Öfen (WICHTIG: Damit Schmelzen weitergeht!)
+                            if (blockState instanceof org.bukkit.block.Furnace sourceFurnace &&
+                                newState instanceof org.bukkit.block.Furnace targetFurnace) {
+
+                                // Setze alle Ofen-Zeiten
+                                targetFurnace.setBurnTime(sourceFurnace.getBurnTime());
+                                targetFurnace.setCookTime(sourceFurnace.getCookTime());
+                                targetFurnace.setCookTimeTotal(sourceFurnace.getCookTimeTotal());
+
+                                // Update Ofen SOFORT damit er weiterschmilzt
+                                targetFurnace.update(true, false);
+                            }
+
+                            // Spezielle Daten für Brewing Stands
+                            if (blockState instanceof org.bukkit.block.BrewingStand sourceBrewingStand &&
+                                newState instanceof org.bukkit.block.BrewingStand targetBrewingStand) {
+                                targetBrewingStand.setBrewingTime(sourceBrewingStand.getBrewingTime());
+                                targetBrewingStand.setFuelLevel(sourceBrewingStand.getFuelLevel());
+                                targetBrewingStand.update(true, false);
+                            }
+
+                            // Update Container (für alle anderen Container-Typen)
+                            if (!(newState instanceof org.bukkit.block.Furnace) &&
+                                !(newState instanceof org.bukkit.block.BrewingStand)) {
+                                targetContainer.update(true, false);
+                            }
+                        } else {
+                            // Kein Container: Normales Update
+                            newState.update(true, false);
                         }
-                    }
-
-                    // Kopiere Custom Name
-                    if (sourceContainer.getCustomName() != null) {
-                        targetContainer.setCustomName(sourceContainer.getCustomName());
-                    }
-
-                    // Spezielle Daten für Öfen
-                    if (blockState instanceof org.bukkit.block.Furnace sourceFurnace &&
-                        newState instanceof org.bukkit.block.Furnace targetFurnace) {
-                        targetFurnace.setBurnTime(sourceFurnace.getBurnTime());
-                        targetFurnace.setCookTime(sourceFurnace.getCookTime());
-                        targetFurnace.setCookTimeTotal(sourceFurnace.getCookTimeTotal());
-                    }
-
-                    // Spezielle Daten für Brewing Stands
-                    if (blockState instanceof org.bukkit.block.BrewingStand sourceBrewingStand &&
-                        newState instanceof org.bukkit.block.BrewingStand targetBrewingStand) {
-                        targetBrewingStand.setBrewingTime(sourceBrewingStand.getBrewingTime());
-                        targetBrewingStand.setFuelLevel(sourceBrewingStand.getFuelLevel());
-                    }
-                }
-
-                // Update Block
-                newState.update(true, false);
+                    },
+                    1L
+                );
             }
         }
     }

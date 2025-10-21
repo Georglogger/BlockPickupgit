@@ -476,7 +476,7 @@ public class NBTUtils {
                         }
                         break;
                     case "owner":
-                        if (entity instanceof Tameable tameable && Boolean.parseBoolean(value)) {
+                        if (entity instanceof Tameable tameable) {
                             // Owner wird durch UUID wiederhergestellt (falls online)
                             try {
                                 java.util.UUID ownerId = java.util.UUID.fromString(value);
@@ -638,35 +638,49 @@ public class NBTUtils {
     }
 
     /**
-     * Serialisiert ein ItemStack zu einem String
+     * Serialisiert ein ItemStack zu einem String (mit allen NBT-Daten)
      */
     private static String serializeItem(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
             return "AIR";
         }
-        // Format: MATERIAL:AMOUNT
-        return item.getType().name() + ":" + item.getAmount();
+
+        try {
+            // Verwende Bukkit's Serialisierung für vollständige Item-Daten
+            return item.serializeAsBytes().length > 0 ?
+                java.util.Base64.getEncoder().encodeToString(item.serializeAsBytes()) :
+                item.getType().name() + ":" + item.getAmount();
+        } catch (Exception e) {
+            // Fallback: Einfache Serialisierung
+            return item.getType().name() + ":" + item.getAmount();
+        }
     }
 
     /**
-     * Deserialisiert einen String zu einem ItemStack
+     * Deserialisiert einen String zu einem ItemStack (mit allen NBT-Daten)
      */
     private static ItemStack deserializeItem(String data) {
         if (data == null || data.equals("AIR") || data.isEmpty()) {
             return null;
         }
 
-        String[] parts = data.split(":");
-        if (parts.length < 2) {
-            return null;
-        }
-
         try {
-            Material material = Material.valueOf(parts[0]);
-            int amount = Integer.parseInt(parts[1]);
-            return new ItemStack(material, amount);
+            // Versuche Base64 Deserialisierung (vollständige Daten)
+            byte[] bytes = java.util.Base64.getDecoder().decode(data);
+            return ItemStack.deserializeBytes(bytes);
         } catch (Exception e) {
-            return null;
+            // Fallback: Einfache Deserialisierung
+            try {
+                String[] parts = data.split(":");
+                if (parts.length < 2) {
+                    return null;
+                }
+                Material material = Material.valueOf(parts[0]);
+                int amount = Integer.parseInt(parts[1]);
+                return new ItemStack(material, amount);
+            } catch (Exception ex) {
+                return null;
+            }
         }
     }
 }
