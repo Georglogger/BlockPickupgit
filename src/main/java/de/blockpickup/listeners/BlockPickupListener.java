@@ -29,13 +29,12 @@ public class BlockPickupListener implements Listener {
     }
 
     /**
-     * Aufheben von Blöcken beim Sneaken (egal welche Interaktion)
+     * Aufheben von Blöcken beim Sneaken + Rechtsklick
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onBlockInteract(PlayerInteractEvent event) {
-        // Nur Interaktionen mit Block (Rechtsklick oder Linksklick)
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK &&
-            event.getAction() != Action.LEFT_CLICK_BLOCK) {
+        // Nur Rechtsklick auf Block (nicht Linksklick, das ist zum Abbauen)
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
 

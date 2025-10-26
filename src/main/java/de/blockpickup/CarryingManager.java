@@ -27,6 +27,9 @@ public class CarryingManager {
     // Armor Stands für visuelle Darstellung
     private final Map<UUID, ArmorStand> visualDisplays = new HashMap<>();
 
+    // Task IDs für Display Updates
+    private final Map<UUID, Integer> displayUpdateTasks = new HashMap<>();
+
     public CarryingManager(BlockPickupPlugin plugin) {
         this.plugin = plugin;
     }
@@ -177,13 +180,18 @@ public class CarryingManager {
      * Startet kontinuierliches Update der Display-Position
      */
     private void startDisplayUpdate(Player player) {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+        // Stoppe existierenden Task falls vorhanden
+        stopDisplayUpdate(player);
+
+        int taskId = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (!isCarrying(player)) {
+                stopDisplayUpdate(player);
                 return;
             }
 
             ArmorStand display = visualDisplays.get(player.getUniqueId());
             if (display == null || !display.isValid()) {
+                stopDisplayUpdate(player);
                 return;
             }
 
@@ -195,13 +203,26 @@ public class CarryingManager {
 
             display.teleport(displayLoc);
 
-        }, 0L, 1L); // Update jede Tick
+        }, 0L, 1L).getTaskId(); // Update jede Tick
+
+        displayUpdateTasks.put(player.getUniqueId(), taskId);
+    }
+
+    /**
+     * Stoppt das Display-Update für einen Spieler
+     */
+    private void stopDisplayUpdate(Player player) {
+        Integer taskId = displayUpdateTasks.remove(player.getUniqueId());
+        if (taskId != null) {
+            plugin.getServer().getScheduler().cancelTask(taskId);
+        }
     }
 
     /**
      * Entfernt die visuelle Darstellung
      */
     private void removeVisualDisplay(Player player) {
+        stopDisplayUpdate(player);
         ArmorStand display = visualDisplays.remove(player.getUniqueId());
         if (display != null && display.isValid()) {
             display.remove();
@@ -234,6 +255,11 @@ public class CarryingManager {
             }
         }
 
+        // Stoppe alle Display-Update Tasks
+        for (Integer taskId : displayUpdateTasks.values()) {
+            plugin.getServer().getScheduler().cancelTask(taskId);
+        }
+
         // Entferne alle Displays
         for (ArmorStand display : visualDisplays.values()) {
             if (display.isValid()) {
@@ -243,6 +269,7 @@ public class CarryingManager {
 
         carryingPlayers.clear();
         visualDisplays.clear();
+        displayUpdateTasks.clear();
     }
 
     /**

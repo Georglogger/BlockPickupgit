@@ -647,12 +647,40 @@ public class NBTUtils {
 
         try {
             // Verwende Bukkit's Serialisierung für vollständige Item-Daten
-            return item.serializeAsBytes().length > 0 ?
-                java.util.Base64.getEncoder().encodeToString(item.serializeAsBytes()) :
-                item.getType().name() + ":" + item.getAmount();
+            byte[] bytes = item.serializeAsBytes();
+            if (bytes != null && bytes.length > 0) {
+                return "B64:" + java.util.Base64.getEncoder().encodeToString(bytes);
+            }
         } catch (Exception e) {
-            // Fallback: Einfache Serialisierung
-            return item.getType().name() + ":" + item.getAmount();
+            // Log warning but continue with fallback
+            BlockPickupPlugin.getInstance().getLogger().warning(
+                "Failed to serialize item " + item.getType() + " using bytes, using fallback: " + e.getMessage()
+            );
+        }
+
+        // Fallback: Verwende YAML Serialisierung von Bukkit
+        try {
+            var map = item.serialize();
+            StringBuilder sb = new StringBuilder("YAML:");
+            sb.append(map.get("v")).append("|");  // Version
+            sb.append(map.get("type")).append("|");  // Material
+            if (map.containsKey("amount")) {
+                sb.append(map.get("amount"));
+            } else {
+                sb.append("1");
+            }
+            if (map.containsKey("meta")) {
+                sb.append("|").append(java.util.Base64.getEncoder().encodeToString(
+                    map.get("meta").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                ));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            // Final fallback: Nur Material und Amount
+            BlockPickupPlugin.getInstance().getLogger().warning(
+                "Failed to serialize item " + item.getType() + " completely, data may be lost: " + e.getMessage()
+            );
+            return "SIMPLE:" + item.getType().name() + ":" + item.getAmount();
         }
     }
 
@@ -665,22 +693,51 @@ public class NBTUtils {
         }
 
         try {
-            // Versuche Base64 Deserialisierung (vollständige Daten)
-            byte[] bytes = java.util.Base64.getDecoder().decode(data);
-            return ItemStack.deserializeBytes(bytes);
-        } catch (Exception e) {
-            // Fallback: Einfache Deserialisierung
-            try {
-                String[] parts = data.split(":");
-                if (parts.length < 2) {
-                    return null;
+            // Erkenne Format anhand des Prefixes
+            if (data.startsWith("B64:")) {
+                // Neues Base64 Format
+                byte[] bytes = java.util.Base64.getDecoder().decode(data.substring(4));
+                return ItemStack.deserializeBytes(bytes);
+            } else if (data.startsWith("YAML:")) {
+                // YAML Fallback Format
+                String[] parts = data.substring(5).split("\\|");
+                if (parts.length >= 3) {
+                    Material material = Material.valueOf(parts[1]);
+                    int amount = Integer.parseInt(parts[2]);
+                    ItemStack item = new ItemStack(material, amount);
+                    // Meta könnte in parts[3] sein, aber das ist komplex zu parsen
+                    // Für jetzt: Basis Item ohne Meta
+                    return item;
                 }
-                Material material = Material.valueOf(parts[0]);
-                int amount = Integer.parseInt(parts[1]);
-                return new ItemStack(material, amount);
-            } catch (Exception ex) {
-                return null;
+            } else if (data.startsWith("SIMPLE:")) {
+                // Einfaches Format
+                String[] parts = data.substring(7).split(":");
+                if (parts.length >= 2) {
+                    Material material = Material.valueOf(parts[0]);
+                    int amount = Integer.parseInt(parts[1]);
+                    return new ItemStack(material, amount);
+                }
+            } else {
+                // Legacy Format (alter Code ohne Prefix) - versuche Base64
+                try {
+                    byte[] bytes = java.util.Base64.getDecoder().decode(data);
+                    return ItemStack.deserializeBytes(bytes);
+                } catch (Exception ignored) {
+                    // Nicht Base64, versuche einfaches Format
+                    String[] parts = data.split(":");
+                    if (parts.length >= 2) {
+                        Material material = Material.valueOf(parts[0]);
+                        int amount = Integer.parseInt(parts[1]);
+                        return new ItemStack(material, amount);
+                    }
+                }
             }
+        } catch (Exception e) {
+            BlockPickupPlugin.getInstance().getLogger().warning(
+                "Failed to deserialize item data: " + e.getMessage()
+            );
         }
+
+        return null;
     }
 }
